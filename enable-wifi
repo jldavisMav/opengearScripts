@@ -1,0 +1,43 @@
+#!/bin/sh
+ARGS=$1
+set -- junk $ARGS
+shift
+
+REQUESTER="$(echo "$1" | sed 's/://g')"
+REQUEST=$2
+PARAMETER=$3
+LOGFILE=/etc/config/scripts/enableWifi.log
+
+echo REQUESTER: $REQUESTER REQUEST: $REQUEST PARAMETER: $PARAMETER >> $LOGFILE
+
+function wifi {
+        #First we need to remove the disable setting on the wifi and send notification back verifying request and time
+        config -d config.interfaces.wlan.disabled -r ipconfig
+        sendsms $REQUESTER "Wifi will be enabled for $PARAMETER hours"
+
+        #Let the script idle for the duration, may be worth calling another script to idle, or modifying crontab?
+        sleep "$PARAMETER"h
+
+        #Once we've waited, disable the wifi once more and notify the user
+        config -s config.interfaces.wlan.disabled="on" -r ipconfig
+        sendsms $REQUESTER "Wifi has been disabled"
+        echo Wifi disabled >> $LOGFILE
+}
+
+function cell {
+        #First, let's retrieve the various status messages we want to send back
+        CELL_STATUS=$(infod_client -o get -p config.cellmodem.status | cut -d: -f2 | awk '{print $2}')
+        CELL_IP=$(infod_client -o get -p config.cellmodem.ppp.iplocal | cut -d: -f2 | awk '{$1=""; print $0}')
+        RSSI=$(infod_client -o get -p config.cellmodem.cellctl.status.rssi | cut -d: -f2| awk '{$1=""; print $0}')
+
+        #Now that we have the information, format it and send to the requester
+        sendsms $REQUESTER "Cell modem state: $CELL_STATUS; Cell modem signal: $RSSI; Cell IP: $CELL_IP"
+}
+
+if [[ $REQUEST == [Ww][Ii][Ff][Ii] ]]
+then
+        wifi
+elif [[ $REQUEST == [Cc][Ee][Ll][Ll] ]]
+then
+        cell
+fi
