@@ -1,5 +1,4 @@
-# opengearScripts
-Scripts written for use with Opengear devices
+Repository for scripts written for use with Opengear devices
 
 Custom scripts should be written to /etc/config/scripts, per Opengear support. You may need to create the scripts directory manually.
 Scripts that are run by the autoresponder are run as root, and will need to make sure that the permissions are set accordingly (for my testing scripts were owned by root and set with 777 permissions).
